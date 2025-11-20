@@ -60,6 +60,20 @@ java -jar build/libs/script-executor.jar
 
 The server will start on `http://0.0.0.0:8080`
 
+## Performance Testing
+
+A comprehensive performance test script is provided to measure response times:
+
+```bash
+# Start the server
+./gradlew run
+
+# In another terminal, run the performance tests
+./test-performance.sh
+```
+
+See [PERFORMANCE.md](PERFORMANCE.md) for detailed performance analysis, expected response times, and optimization recommendations.
+
 ## Usage Examples
 
 ### Using curl
