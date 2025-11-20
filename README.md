@@ -5,10 +5,11 @@ A minimal Ktor server that executes both Kotlin and TypeScript scripts, measurin
 ## Features
 
 - **Dual language support**: Execute both Kotlin and TypeScript/JavaScript scripts
-- **Detailed timing breakdown**: Separate compilation and execution time measurement for TypeScript
-- **Performance comparison**: Compare Kotlin's full compilation vs TypeScript's lighter parsing
+- **TypeScript type checking**: Optional type validation with separate timing measurement
+- **Detailed timing breakdown**: Separate type-checking, compilation, and execution phases
+- **Performance comparison**: Compare Kotlin's full compilation vs TypeScript with/without type checking
 - **JSON API** with kotlinx.serialization
-- **Error handling** with detailed error messages
+- **Error handling** with detailed type error reporting
 - **GraalVM JavaScript engine** for optimized TypeScript/JavaScript execution
 
 ## API
@@ -58,7 +59,7 @@ A minimal Ktor server that executes both Kotlin and TypeScript scripts, measurin
 
 **Note**: Kotlin's JSR-223 engine doesn't separate compilation from execution, so both times are the same.
 
-### 3. Execute TypeScript Script
+### 3. Execute TypeScript Script (No Type Checking)
 
 **Endpoint:** `POST /execute/typescript`
 
@@ -74,14 +75,62 @@ A minimal Ktor server that executes both Kotlin and TypeScript scripts, measurin
 {
   "result": "30",
   "totalTimeMs": 18,
+  "typeCheckTimeMs": null,
   "compilationTimeMs": 5,
   "executionTimeMs": 13,
   "language": "typescript/javascript",
+  "typeErrors": null,
   "error": null
 }
 ```
 
-**Note**: TypeScript shows separate compilation (parsing) and execution times, highlighting the lightweight compilation phase.
+**Note**: Without type checking, TypeScript runs as JavaScript - fast parsing with no type validation.
+
+### 4. Execute TypeScript Script (With Type Checking)
+
+**Endpoint:** `POST /execute/typescript-checked`
+
+**Request:**
+```json
+{
+  "script": "const x: number = 10; const y: number = 20; x + y"
+}
+```
+
+**Response (Success):**
+```json
+{
+  "result": "30",
+  "totalTimeMs": 25,
+  "typeCheckTimeMs": 5,
+  "compilationTimeMs": 8,
+  "executionTimeMs": 12,
+  "language": "typescript-checked",
+  "typeErrors": [],
+  "error": null
+}
+```
+
+**Response (Type Error):**
+```json
+{
+  "result": null,
+  "totalTimeMs": 8,
+  "typeCheckTimeMs": 7,
+  "compilationTimeMs": 0,
+  "executionTimeMs": 0,
+  "language": "typescript-checked",
+  "typeErrors": [
+    "Type 'string' is not assignable to type 'number' for variable 'x'"
+  ],
+  "error": "Type checking failed"
+}
+```
+
+**Note**: Type checking adds overhead but provides type safety similar to Kotlin. Timing breakdown shows:
+- `typeCheckTimeMs`: Time spent validating types
+- `compilationTimeMs`: Parsing after type validation
+- `executionTimeMs`: Actual script execution
 
 ## Building and Running
 
@@ -105,7 +154,7 @@ The server will start on `http://0.0.0.0:8080`
 
 ## Performance Testing & Comparison
 
-Two test scripts are provided to measure and compare performance:
+Three test scripts are provided to measure and compare performance:
 
 ### Kotlin-only Performance Tests
 ```bash
@@ -129,6 +178,21 @@ The comparison script runs equivalent scripts in both languages and shows:
 - **Kotlin**: Total compilation + execution time (combined)
 - **TypeScript**: Separate compilation (parsing) and execution times
 
+### TypeScript Type Checking Tests
+```bash
+# Start the server
+./gradlew run
+
+# In another terminal, test type checking
+./test-typescript-types.sh
+```
+
+The type checking test demonstrates:
+- **Valid TypeScript**: Types are validated, then script executes
+- **Type Errors**: Caught before execution with detailed error messages
+- **Performance Impact**: `typeCheckTimeMs` shows type validation overhead
+- **Comparison**: With vs without type checking timing differences
+
 ### Documentation
 - [PERFORMANCE.md](PERFORMANCE.md) - Kotlin performance analysis
 - [COMPARISON.md](COMPARISON.md) - Detailed Kotlin vs TypeScript comparison with:
@@ -136,6 +200,7 @@ The comparison script runs equivalent scripts in both languages and shows:
   - Compilation phase breakdowns
   - Expected performance benchmarks
   - Use case recommendations
+  - Type checking vs no type checking comparison
 
 ## Usage Examples
 
@@ -185,6 +250,25 @@ curl -X POST http://localhost:8080/execute/typescript \
 curl -X POST http://localhost:8080/execute/typescript \
   -H "Content-Type: application/json" \
   -d '{"script":"function fib(n) { return n <= 1 ? n : fib(n-1) + fib(n-2); } fib(20)"}'
+```
+
+### TypeScript with Type Checking Examples
+
+```bash
+# Valid types - executes successfully
+curl -X POST http://localhost:8080/execute/typescript-checked \
+  -H "Content-Type: application/json" \
+  -d '{"script":"const x: number = 10; const y: number = 20; x + y"}'
+
+# Type error - caught before execution
+curl -X POST http://localhost:8080/execute/typescript-checked \
+  -H "Content-Type: application/json" \
+  -d '{"script":"const name: string = 123"}'
+
+# Typed function
+curl -X POST http://localhost:8080/execute/typescript-checked \
+  -H "Content-Type: application/json" \
+  -d '{"script":"function add(a: number, b: number): number { return a + b; } add(5, 10)"}'
 ```
 
 ## Project Structure
