@@ -1,266 +1,45 @@
-@file:OptIn(ExperimentalWasmDsl::class, ExperimentalKotlinGradlePluginApi::class)
-
-import com.vanniktech.maven.publish.JavadocJar
-import com.vanniktech.maven.publish.KotlinMultiplatform
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
-import org.jreleaser.model.Active
 
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.kotlin.plugin.power.assert)
-    alias(libs.plugins.kotlinx.binary.compatibility.validator)
-    alias(libs.plugins.dokka)
-    alias(libs.plugins.versions)
-    alias(libs.plugins.maven.publish)
-    alias(libs.plugins.jreleaser)
-    alias(libs.plugins.xemantic.conventions)
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ktor)
+    application
 }
 
-// TODO change the group
-group = "com.xemantic.template"
+group = "com.xemantic.script"
+version = "1.0-SNAPSHOT"
 
-// TODO fill up the details
-xemantic {
-    description = "A template repository for Xemantic's Kotlin multiplatform projects"
-    inceptionYear = "2025"
-    applyAllConventions()
+application {
+    mainClass.set("com.xemantic.script.executor.ApplicationKt")
 }
 
-fun MavenPomDeveloperSpec.projectDevs() {
-    developer {
-        id = "morisil"
-        name = "Kazik Pogoda"
-        url = "https://github.com/morisil"
+ktor {
+    fatJar {
+        archiveFileName.set("script-executor.jar")
     }
 }
-
-val javaTarget = libs.versions.javaTarget.get()
-val kotlinTarget = KotlinVersion.fromVersion(libs.versions.kotlinTarget.get())
 
 kotlin {
-
-    // TODO remove for a non-library project
-    explicitApi()
+    jvmToolchain(17)
 
     compilerOptions {
-        apiVersion = kotlinTarget
-        languageVersion = kotlinTarget
-        freeCompilerArgs.addAll(
-            "-Xcontext-parameters",
-            "-Xcontext-sensitive-resolution"
-        )
-        extraWarnings = true
-        progressiveMode = true
-        //optIn.addAll("add opt ins here")
+        jvmTarget = JvmTarget.JVM_17
     }
-
-    jvm {
-        // set up according to https://jakewharton.com/gradle-toolchains-are-rarely-a-good-idea/
-        compilerOptions {
-            apiVersion = kotlinTarget
-            languageVersion = kotlinTarget
-            jvmTarget = JvmTarget.fromTarget(javaTarget)
-            freeCompilerArgs.add("-Xjdk-release=$javaTarget")
-            progressiveMode = true
-        }
-    }
-
-    js {
-        browser()
-        nodejs()
-        // TODO remove for a non-library project
-        binaries.library()
-    }
-
-    wasmJs {
-        browser()
-        nodejs()
-        d8()
-        // TODO remove for a non-library project
-        binaries.library()
-    }
-
-    wasmWasi {
-        nodejs()
-        // TODO remove for a non-library project
-        binaries.library()
-    }
-
-    // native, see https://kotlinlang.org/docs/native-target-support.html
-    // tier 1
-    macosX64()
-    macosArm64()
-    iosSimulatorArm64()
-    iosX64()
-    iosArm64()
-
-    // tier 2
-    linuxX64()
-    linuxArm64()
-    watchosSimulatorArm64()
-    watchosX64()
-    watchosArm32()
-    watchosArm64()
-    tvosSimulatorArm64()
-    tvosX64()
-    tvosArm64()
-
-    // tier 3
-    androidNativeArm32()
-    androidNativeArm64()
-    androidNativeX86()
-    androidNativeX64()
-    mingwX64()
-    watchosDeviceArm64()
-
-    swiftExport {}
-
-    sourceSets {
-
-        commonTest {
-            dependencies {
-                implementation(libs.kotlin.test)
-                implementation(libs.xemantic.kotlin.test)
-            }
-        }
-
-    }
-
 }
 
 repositories {
     mavenCentral()
 }
 
-// skip tests which require XCode components to be installed
-tasks {
-    named("tvosSimulatorArm64Test") { enabled = false }
-    named("watchosSimulatorArm64Test") { enabled = false }
-}
+dependencies {
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.logback.classic)
 
-// TODO only relevant for private projects, public project snapshots are released to maven central
-//publishing {
-//    if (isPublishingToGitHub) {
-//        repositories {
-//            maven {
-//                name = "GitHubPackages"
-//                url = uri("https://maven.pkg.github.com/xemantic/xemantic-kotlin-core")
-//                credentials(PasswordCredentials::class)
-//            }
-//        }
-//    }
-//}
+    implementation(libs.kotlin.scripting.jsr223)
 
-powerAssert {
-    functions = listOf(
-        "com.xemantic.kotlin.test.assert",
-        "com.xemantic.kotlin.test.have"
-    )
-}
-
-// https://kotlinlang.org/docs/dokka-migration.html#adjust-configuration-options
-dokka {
-    pluginsConfiguration.html {
-        footerMessage = xemantic.copyright
-    }
-}
-
-mavenPublishing {
-
-    configure(KotlinMultiplatform(
-        javadocJar = JavadocJar.Dokka("dokkaGenerateHtml"),
-        sourcesJar = true
-    ))
-
-    signAllPublications()
-
-    publishToMavenCentral(
-        automaticRelease = true,
-        validateDeployment = false // for kotlin multiplatform projects it might take a while (>900s)
-    )
-
-    coordinates(
-        groupId = group.toString(),
-        artifactId = rootProject.name,
-        version = version.toString()
-    )
-
-    pom {
-
-        name = rootProject.name
-        description = xemantic.description
-        inceptionYear = xemantic.inceptionYear
-        url = "https://github.com/${xemantic.gitHubAccount}/${rootProject.name}"
-
-        organization {
-            name = xemantic.organization
-            url = xemantic.organizationUrl
-        }
-
-        licenses {
-            license {
-                name = "The Apache License, Version 2.0"
-                url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
-                distribution = "https://www.apache.org/licenses/LICENSE-2.0.txt"
-            }
-        }
-
-        scm {
-            url = "https://github.com/${xemantic.gitHubAccount}/${rootProject.name}"
-            connection = "scm:git:git://github.com/${xemantic.gitHubAccount}/${rootProject.name}.git"
-            developerConnection = "scm:git:ssh://git@github.com/${xemantic.gitHubAccount}/${rootProject.name}.git"
-        }
-
-        ciManagement {
-            system = "GitHub"
-            url = "https://github.com/${xemantic.gitHubAccount}/${rootProject.name}/actions"
-        }
-
-        issueManagement {
-            system = "GitHub"
-            url = "https://github.com/${xemantic.gitHubAccount}/${rootProject.name}/issues"
-        }
-
-        developers {
-            projectDevs()
-        }
-
-    }
-
-}
-
-val releaseAnnouncementSubject = """🚀 ${rootProject.name} $version has been released!"""
-val releaseAnnouncement = """
-$releaseAnnouncementSubject
-
-${xemantic.description}
-
-${xemantic.releasePageUrl}
-""".trim()
-
-jreleaser {
-
-    announce {
-        webhooks {
-            create("discord") {
-                active = Active.ALWAYS
-                message = releaseAnnouncement
-                messageProperty = "content"
-                structuredMessage = true
-            }
-        }
-        linkedin {
-            active = Active.ALWAYS
-            subject = releaseAnnouncementSubject
-            message = releaseAnnouncement
-        }
-        bluesky {
-            active = Active.ALWAYS
-            status = releaseAnnouncement
-        }
-    }
-
+    testImplementation(libs.kotlin.test)
 }

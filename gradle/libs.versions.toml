@@ -3,28 +3,21 @@ kotlinTarget = "2.2"
 javaTarget = "17"
 
 kotlin = "2.2.21"
-
-xemanticKotlinTest = "1.15.2"
-
-# TODO put your dependencies here
-
-versionsPlugin = "0.53.0"
-dokkaPlugin = "2.1.0"
-mavenPublishPlugin = "0.35.0"
-jreleaserPlugin = "1.20.0" # 1.21.0 has a bug
-binaryCompatibilityValidatorPlugin = "0.18.1"
-xemanticConventionsPlugin = "0.6.6"
+ktor = "3.0.3"
+logback = "1.5.12"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-xemantic-kotlin-test = { module = "com.xemantic.kotlin:xemantic-kotlin-test", version.ref = "xemanticKotlinTest" }
+kotlin-scripting-jsr223 = { module = "org.jetbrains.kotlin:kotlin-scripting-jsr223", version.ref = "kotlin" }
+
+ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
+ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
 [plugins]
-kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-kotlin-plugin-power-assert = { id = "org.jetbrains.kotlin.plugin.power-assert", version.ref = "kotlin" }
-dokka = { id = "org.jetbrains.dokka", version.ref = "dokkaPlugin" }
-versions = { id = "com.github.ben-manes.versions", version.ref = "versionsPlugin" }
-maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublishPlugin" }
-kotlinx-binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidatorPlugin" }
-jreleaser = { id = "org.jreleaser", version.ref = "jreleaserPlugin" }
-xemantic-conventions = { id = "com.xemantic.gradle.xemantic-conventions", version.ref = "xemanticConventionsPlugin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
