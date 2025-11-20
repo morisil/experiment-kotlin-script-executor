@@ -40,6 +40,8 @@ dependencies {
     implementation(libs.logback.classic)
 
     implementation(libs.kotlin.scripting.jsr223)
+    implementation(libs.graalvm.polyglot)
+    implementation(libs.graalvm.js)
 
     testImplementation(libs.kotlin.test)
 }
